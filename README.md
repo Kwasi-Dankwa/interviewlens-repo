@@ -3,7 +3,7 @@
 **AI-powered user interview analyzer built with Claude.**  
 Turn raw transcripts and messy notes into structured UX insights — themes, pain points, key quotes, and product opportunities — in seconds.
 
-🔗 [Live Demo](https://yourusername.github.io/interviewlens) &nbsp;·&nbsp; [Report a Bug](https://github.com/yourusername/interviewlens/issues)
+🔗 [Live Demo](https://kwasi-dankwa.github.io/interviewlens-repo/) &nbsp;·&nbsp; [Report a Bug](https://kwasi-dankwa.github.io/interviewlens-repo/issues)
 
 ---
 
