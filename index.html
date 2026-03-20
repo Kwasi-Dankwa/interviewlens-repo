@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Lens — User Interview Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --accent: #c84b2f;
+    --accent2: #2d6a4f;
+    --muted: #7a7268;
+    --border: #cec8bc;
+    --card: #faf7f2;
+    --highlight: #fff3cd;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1.5px solid var(--ink);
+    padding: 20px 48px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .tagline {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .api-key-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 12px;
+    background: white;
+  }
+
+  .api-key-wrap label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .api-key-wrap input {
+    border: none;
+    outline: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    width: 200px;
+    background: transparent;
+    color: var(--ink);
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 65px);
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    border-right: 1.5px solid var(--ink);
+    padding: 40px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .panel-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .step-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .section-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    background: white;
+    color: var(--ink);
+    resize: vertical;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--ink);
+  }
+
+  textarea::placeholder { color: var(--muted); }
+
+  .char-count {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+  }
+
+  .context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .context-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  input[type="text"] {
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    background: white;
+    color: var(--ink);
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { outline: none; border-color: var(--ink); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  .analyze-btn {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 16px 28px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    cursor: pointer;
+    border-radius: 6px;
+    width: 100%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.01em;
+  }
+
+  .analyze-btn:hover:not(:disabled) {
+    background: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .analyze-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .analyze-btn .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  .analyze-btn.loading .spinner { display: block; }
+  .analyze-btn.loading .btn-text { opacity: 0.7; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .example-link {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .example-link:hover { color: var(--accent); }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    padding: 40px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .results-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+  }
+
+  .results-meta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--muted);
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 60px;
+    text-align: center;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 0.85rem;
+    max-width: 240px;
+    line-height: 1.6;
+  }
+
+  /* RESULTS */
+  .results-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.4s ease;
+  }
+
+  .results-container.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+  }
+
+  .card-icon { font-size: 1rem; }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.95rem;
+  }
+
+  .card-count {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .card-body { padding: 16px 18px; }
+
+  .theme-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cream);
+    align-items: flex-start;
+  }
+
+  .theme-item:last-child { border-bottom: none; }
+
+  .theme-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .theme-text {
+    font-size: 0.83rem;
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .theme-label {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .theme-evidence {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  .quote-item {
+    padding: 10px 14px;
+    border-left: 3px solid var(--accent);
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .quote-item:last-child { margin-bottom: 0; }
+
+  .quote-text {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    font-style: italic;
+    color: var(--ink);
+  }
+
+  .quote-tag {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .opportunity-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cream);
+    align-items: flex-start;
+  }
+
+  .opportunity-item:last-child { border-bottom: none; }
+
+  .opp-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    width: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .opp-text { font-size: 0.83rem; line-height: 1.55; }
+
+  .opp-label { font-weight: 500; }
+
+  .opp-why {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .metric-box {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .metric-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    color: var(--accent);
+  }
+
+  .metric-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .sentiment-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--cream);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .sentiment-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent), var(--accent2));
+    transition: width 1s ease;
+    width: 0;
+  }
+
+  .sentiment-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .error-box {
+    background: #fff0ed;
+    border: 1.5px solid #f4a99a;
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-size: 0.83rem;
+    color: #8b2a1d;
+    line-height: 1.6;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 14px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--paper);
+  }
+
+  .footer-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .footer-note a {
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* LOADING STREAM */
+  .stream-box {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+    min-height: 120px;
+    display: none;
+  }
+
+  .stream-box.active { display: block; }
+  .cursor { display: inline-block; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .left-panel { border-right: none; border-bottom: 1.5px solid var(--ink); }
+    header, .left-panel, .right-panel, footer { padding-left: 24px; padding-right: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Interview <span>Lens</span></div>
+  <div class="tagline">User Research Analyzer</div>
+  <div class="header-right">
+    <div class="api-key-wrap">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-title">
+      <div class="step-badge">1</div>
+      Paste Your Interview
+    </div>
+
+    <div class="section-block">
+      <div class="section-label">Interview Transcript or Notes</div>
+      <textarea id="transcript" rows="12"
+        placeholder="Paste your raw interview transcript, notes, or even rough bullet points here...
+
+Example:
+User: I always forget to check the app before leaving the house.
+Me: Why do you think that happens?
+User: It just doesn't feel like part of my routine yet..."></textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="example-link" onclick="loadExample()">← Load example transcript</span>
+        <span class="char-count" id="charCount">0 chars</span>
+      </div>
+    </div>
+
+    <div class="panel-title">
+      <div class="step-badge">2</div>
+      Add Context <span style="font-size:0.75rem; font-family:'DM Sans'; color:var(--muted); font-style:normal; margin-left:6px;">(optional)</span>
+    </div>
+
+    <div class="context-grid">
+      <div class="context-field">
+        <div class="section-label">Product / Domain</div>
+        <input type="text" id="product" placeholder="e.g. habit-tracking app">
+      </div>
+      <div class="context-field">
+        <div class="section-label">Research Goal</div>
+        <input type="text" id="goal" placeholder="e.g. understand drop-off">
+      </div>
+      <div class="context-field">
+        <div class="section-label">Participant Role</div>
+        <input type="text" id="participant" placeholder="e.g. first-time user">
+      </div>
+      <div class="context-field">
+        <div class="section-label">Session Type</div>
+        <input type="text" id="sessionType" placeholder="e.g. usability test">
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+      <div class="spinner"></div>
+      <span class="btn-text">Analyze Interview →</span>
+    </button>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="results-header">
+      <div class="results-title">Analysis</div>
+      <div class="results-meta" id="resultsMeta"></div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">◎</div>
+      <p>Paste an interview and hit Analyze to extract themes, quotes, and opportunities.</p>
+    </div>
+
+    <div class="stream-box" id="streamBox">
+      <span id="streamText"></span><span class="cursor">▌</span>
+    </div>
+
+    <div class="results-container" id="resultsContainer"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-note">Powered by Claude claude-sonnet-4-20250514 · Your API key stays in this browser tab, never stored</div>
+  <div class="footer-note"><a href="https://github.com" target="_blank">View on GitHub</a></div>
+</footer>
+
+<script>
+  // Char counter
+  document.getElementById('transcript').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length + ' chars';
+  });
+
+  function loadExample() {
+    const ex = `Interviewer: Thanks for joining today! Can you walk me through how you currently manage your tasks?
+
+Participant: Yeah, so I use my phone's notes app mostly. I've tried like three or four task apps but none of them really stuck. It always starts well and then I just... stop opening them after like two weeks.
+
+Interviewer: What do you think makes you stop?
+
+Participant: Honestly, it feels like a chore to maintain. Like, I have to go in and update things, mark stuff done, reorganize. By the time I've done all that I could have just done the task.
+
+Interviewer: Have there been moments where a tool really helped you?
+
+Participant: My calendar actually. If it's in my calendar, I do it. But my calendar is already full of meetings so it feels weird putting todos there too. 
+
+Interviewer: What would a perfect tool look like for you?
+
+Participant: Something that like, doesn't require maintenance? Just knows what I need to do. And maybe tells me what to focus on right now instead of showing me a huge list. I get overwhelmed by big lists.
+
+Interviewer: How do you feel when you miss a task?
+
+Participant: Pretty bad actually. Like there's this guilt that builds up when I see overdue things. At some point it's so overwhelming I just delete everything and start fresh. I've done that three times.
+
+Interviewer: Three times! So a clean slate feels better?
+
+Participant: At first yeah. Then the cycle just repeats. I think I just have a bad system.`;
+
+    document.getElementById('transcript').value = ex;
+    document.getElementById('charCount').textContent = ex.length + ' chars';
+    document.getElementById('product').value = 'Task management app';
+    document.getElementById('goal').value = 'Understand retention issues';
+    document.getElementById('participant').value = 'Power user, repeat churner';
+    document.getElementById('sessionType').value = 'Discovery interview';
+  }
+
+  async function analyze() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const transcript = document.getElementById('transcript').value.trim();
+
+    if (!apiKey) { alert('Please enter your Anthropic API key.'); return; }
+    if (!transcript) { alert('Please paste an interview transcript.'); return; }
+
+    const product = document.getElementById('product').value;
+    const goal = document.getElementById('goal').value;
+    const participant = document.getElementById('participant').value;
+    const sessionType = document.getElementById('sessionType').value;
+
+    // UI state
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.querySelector('.btn-text').textContent = 'Analyzing...';
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('resultsContainer').innerHTML = '';
+    document.getElementById('resultsContainer').classList.remove('visible');
+
+    const streamBox = document.getElementById('streamBox');
+    const streamText = document.getElementById('streamText');
+    streamBox.classList.add('active');
+    streamText.textContent = 'Reading transcript...';
+
+    const contextParts = [
+      product && `Product/Domain: ${product}`,
+      goal && `Research Goal: ${goal}`,
+      participant && `Participant: ${participant}`,
+      sessionType && `Session Type: ${sessionType}`,
+    ].filter(Boolean).join('\n');
+
+    const systemPrompt = `You are a senior UX researcher and product strategist. Analyze user interview transcripts and extract structured insights.
+
+Always respond with ONLY valid JSON, no markdown fences, no preamble.
+
+Return this exact structure:
+{
+  "summary": "2-3 sentence synthesis of the interview in plain English",
+  "sentiment_score": <number 0-100, where 0=very negative, 50=neutral, 100=very positive>,
+  "word_count": <approximate word count of transcript as integer>,
+  "themes": [
+    {
+      "label": "Short theme name",
+      "description": "1-2 sentence description of the theme",
+      "evidence": "Brief quote or paraphrase that illustrates this"
+    }
+  ],
+  "pain_points": [
+    {
+      "label": "Pain point name",
+      "description": "What the user struggles with",
+      "severity": "high|medium|low"
+    }
+  ],
+  "key_quotes": [
+    {
+      "quote": "Exact or near-exact quote from the participant",
+      "tag": "emotion|insight|blocker|desire|behavior"
+    }
+  ],
+  "opportunities": [
+    {
+      "label": "Opportunity name",
+      "description": "What could be built or improved",
+      "why": "Why this matters based on the interview"
+    }
+  ],
+  "next_questions": [
+    "Follow-up question to explore in next session"
+  ]
+}
+
+Extract 3-5 themes, 2-4 pain points, 3-5 quotes, 3-4 opportunities, and 3 next questions. Be specific and grounded in what was actually said.`;
+
+    const userPrompt = `${contextParts ? 'Context:\n' + contextParts + '\n\n' : ''}Interview Transcript:\n${transcript}`;
+
+    try {
+      streamText.textContent = 'Extracting themes and insights...';
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'API request failed');
+      }
+
+      streamText.textContent = 'Building analysis...';
+      const data = await response.json();
+      const rawText = data.content[0].text.trim();
+
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch {
+        const cleaned = rawText.replace(/```json|```/g, '').trim();
+        result = JSON.parse(cleaned);
+      }
+
+      streamBox.classList.remove('active');
+      renderResults(result);
+
+    } catch (err) {
+      streamBox.classList.remove('active');
+      document.getElementById('emptyState').style.display = 'none';
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = `<div class="error-box"><strong>Error:</strong> ${err.message}<br><br>Make sure your API key is valid and has access to Claude claude-sonnet-4-20250514.</div>`;
+      container.classList.add('visible');
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.querySelector('.btn-text').textContent = 'Analyze Interview →';
+    }
+  }
+
+  function severityColor(s) {
+    return s === 'high' ? '#c84b2f' : s === 'medium' ? '#e08a3c' : '#888';
+  }
+
+  function renderResults(r) {
+    const container = document.getElementById('resultsContainer');
+    const ts = new Date().toLocaleTimeString();
+    document.getElementById('resultsMeta').textContent = `Generated ${ts}`;
+
+    const cards = [];
+
+    // SUMMARY + METRICS
+    cards.push(`
+      <div class="result-card">
+        <div class="card-header">
+          <span class="card-icon">◎</span>
+          <span class="card-title">Summary</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:0.85rem; line-height:1.65; margin-bottom:16px;">${r.summary}</p>
+          <div class="metric-grid">
+            <div class="metric-box">
+              <div class="metric-value">${r.themes?.length || 0}</div>
+              <div class="metric-label">Themes Found</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value">${r.pain_points?.length || 0}</div>
+              <div class="metric-label">Pain Points</div>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:6px;">Participant Sentiment</div>
+            <div class="sentiment-bar">
+              <div class="sentiment-fill" id="sentFill" style="width:${r.sentiment_score || 50}%"></div>
+            </div>
+            <div class="sentiment-labels"><span>Negative</span><span>Positive</span></div>
+          </div>
+        </div>
+      </div>`);
+
+    // THEMES
+    if (r.themes?.length) {
+      const items = r.themes.map(t => `
+        <div class="theme-item">
+          <div class="theme-bullet"></div>
+          <div class="theme-text">
+            <div class="theme-label">${t.label}</div>
+            <div>${t.description}</div>
+            ${t.evidence ? `<div class="theme-evidence">"${t.evidence}"</div>` : ''}
+          </div>
+        </div>`).join('');
+      cards.push(`
+        <div class="result-card">
+          <div class="card-header">
+            <span class="card-icon">◈</span>
+            <span class="card-title">Key Themes</span>
+            <span class="card-count">${r.themes.length}</span>
+          </div>
+          <div class="card-body">${items}</div>
+        </div>`);
+    }
+
+    // PAIN POINTS
+    if (r.pain_points?.length) {
+      const items = r.pain_points.map(p => `
+        <div class="theme-item">
+          <div class="theme-bullet" style="background:${severityColor(p.severity)}"></div>
+          <div class="theme-text">
+            <div class="theme-label" style="display:flex; align-items:center; gap:8px;">
+              ${p.label}
+              <span style="font-size:0.65rem; font-family:'DM Mono'; text-transform:uppercase; letter-spacing:0.06em; color:${severityColor(p.severity)}; font-weight:500;">${p.severity}</span>
+            </div>
+            <div>${p.description}</div>
+          </div>
+        </div>`).join('');
+      cards.push(`
+        <div class="result-card">
+          <div class="card-header">
+            <span class="card-icon">⚡</span>
+            <span class="card-title">Pain Points</span>
+            <span class="card-count">${r.pain_points.length}</span>
+          </div>
+          <div class="card-body">${items}</div>
+        </div>`);
+    }
+
+    // KEY QUOTES
+    if (r.key_quotes?.length) {
+      const items = r.key_quotes.map(q => `
+        <div class="quote-item">
+          <div class="quote-text">"${q.quote}"</div>
+          <span class="quote-tag">${q.tag}</span>
+        </div>`).join('');
+      cards.push(`
+        <div class="result-card">
+          <div class="card-header">
+            <span class="card-icon">❝</span>
+            <span class="card-title">Key Quotes</span>
+            <span class="card-count">${r.key_quotes.length}</span>
+          </div>
+          <div class="card-body">${items}</div>
+        </div>`);
+    }
+
+    // OPPORTUNITIES
+    if (r.opportunities?.length) {
+      const items = r.opportunities.map((o, i) => `
+        <div class="opportunity-item">
+          <div class="opp-number">0${i+1}</div>
+          <div class="opp-text">
+            <div class="opp-label">${o.label}</div>
+            <div>${o.description}</div>
+            <div class="opp-why">↳ ${o.why}</div>
+          </div>
+        </div>`).join('');
+      cards.push(`
+        <div class="result-card">
+          <div class="card-header">
+            <span class="card-icon">◇</span>
+            <span class="card-title">Opportunities</span>
+            <span class="card-count">${r.opportunities.length}</span>
+          </div>
+          <div class="card-body">${items}</div>
+        </div>`);
+    }
+
+    // NEXT QUESTIONS
+    if (r.next_questions?.length) {
+      const items = r.next_questions.map((q, i) => `
+        <div class="opportunity-item">
+          <div class="opp-number">Q${i+1}</div>
+          <div class="opp-text" style="font-style:italic; color:var(--muted); font-size:0.82rem;">${q}</div>
+        </div>`).join('');
+      cards.push(`
+        <div class="result-card">
+          <div class="card-header">
+            <span class="card-icon">→</span>
+            <span class="card-title">Follow-up Questions</span>
+          </div>
+          <div class="card-body">${items}</div>
+        </div>`);
+    }
+
+    container.innerHTML = cards.join('');
+    container.classList.add('visible');
+
+    // Animate sentiment bar
+    setTimeout(() => {
+      const fill = document.getElementById('sentFill');
+      if (fill) fill.style.width = (r.sentiment_score || 50) + '%';
+    }, 200);
+  }
+</script>
+</body>
+</html>
