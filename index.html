@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Interview Lens — User Interview Analyzer</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
   :root {
     --ink: #0d0d0d;
@@ -553,6 +554,101 @@
   .cursor { display: inline-block; animation: blink 1s step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
+  /* FILE UPLOAD */
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    position: relative;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--ink);
+    background: var(--cream);
+  }
+
+  .upload-zone.has-file {
+    border-color: var(--accent2);
+    background: #f0f7f4;
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .upload-icon {
+    font-size: 1.4rem;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .upload-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .upload-label strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .upload-types {
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .file-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent2);
+    color: white;
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+
+  .file-badge .remove-file {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+
+  .file-badge .remove-file:hover { opacity: 1; }
+
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
   /* RESPONSIVE */
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; }
@@ -579,12 +675,30 @@
   <div class="left-panel">
     <div class="panel-title">
       <div class="step-badge">1</div>
-      Paste Your Interview
+      Add Your Interview
     </div>
 
     <div class="section-block">
-      <div class="section-label">Interview Transcript or Notes</div>
-      <textarea id="transcript" rows="12"
+      <div class="section-label">Upload a File</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" onchange="handleFileSelect(event)">
+        <span class="upload-icon">⬆</span>
+        <div class="upload-label"><strong>Drop a file here</strong> or click to browse</div>
+        <div class="upload-types">.pdf · .docx · .txt</div>
+        <div id="fileBadge" style="display:none;">
+          <span class="file-badge">
+            <span id="fileName"></span>
+            <span class="remove-file" onclick="removeFile(event)">✕</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="or-divider">or</div>
+
+    <div class="section-block">
+      <div class="section-label">Paste Transcript or Notes</div>
+      <textarea id="transcript" rows="9"
         placeholder="Paste your raw interview transcript, notes, or even rough bullet points here...
 
 Example:
@@ -653,7 +767,88 @@ User: It just doesn't feel like part of my routine yet..."></textarea>
 </footer>
 
 <script>
-  // Char counter
+  // ── File upload state ──────────────────────────────────────────
+  let uploadedFile = null;      // raw File object
+  let pdfBase64 = null;         // base64 string for PDFs
+  let extractedText = null;     // extracted text for docx/txt
+
+  // Drag-and-drop
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+  }
+
+  function processFile(file) {
+    const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['pdf', 'docx', 'txt'].includes(ext)) {
+      alert('Please upload a .pdf, .docx, or .txt file.');
+      return;
+    }
+
+    uploadedFile = file;
+    pdfBase64 = null;
+    extractedText = null;
+
+    // Show badge
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileBadge').style.display = 'block';
+    zone.classList.add('has-file');
+
+    const reader = new FileReader();
+
+    if (ext === 'pdf') {
+      reader.onload = e => {
+        // Store base64 — strip the data URL prefix
+        pdfBase64 = e.target.result.split(',')[1];
+      };
+      reader.readAsDataURL(file);
+    } else if (ext === 'docx') {
+      reader.onload = async e => {
+        try {
+          const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+          extractedText = result.value;
+          // Populate textarea so user can review/edit
+          document.getElementById('transcript').value = extractedText;
+          document.getElementById('charCount').textContent = extractedText.length + ' chars';
+        } catch (err) {
+          alert('Could not read Word document: ' + err.message);
+          removeFile();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else if (ext === 'txt') {
+      reader.onload = e => {
+        extractedText = e.target.result;
+        document.getElementById('transcript').value = extractedText;
+        document.getElementById('charCount').textContent = extractedText.length + ' chars';
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  function removeFile(e) {
+    if (e) e.stopPropagation();
+    uploadedFile = null;
+    pdfBase64 = null;
+    extractedText = null;
+    document.getElementById('fileBadge').style.display = 'none';
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('fileInput').value = '';
+    zone.classList.remove('has-file');
+  }
+
+  // ── Char counter ───────────────────────────────────────────────
   document.getElementById('transcript').addEventListener('input', function() {
     document.getElementById('charCount').textContent = this.value.length + ' chars';
   });
@@ -694,9 +889,10 @@ Participant: At first yeah. Then the cycle just repeats. I think I just have a b
   async function analyze() {
     const apiKey = document.getElementById('apiKey').value.trim();
     const transcript = document.getElementById('transcript').value.trim();
+    const isPdf = !!pdfBase64;
 
     if (!apiKey) { alert('Please enter your Anthropic API key.'); return; }
-    if (!transcript) { alert('Please paste an interview transcript.'); return; }
+    if (!isPdf && !transcript) { alert('Please upload a file or paste a transcript.'); return; }
 
     const product = document.getElementById('product').value;
     const goal = document.getElementById('goal').value;
@@ -716,7 +912,7 @@ Participant: At first yeah. Then the cycle just repeats. I think I just have a b
     const streamBox = document.getElementById('streamBox');
     const streamText = document.getElementById('streamText');
     streamBox.classList.add('active');
-    streamText.textContent = 'Reading transcript...';
+    streamText.textContent = isPdf ? 'Reading PDF...' : 'Reading transcript...';
 
     const contextParts = [
       product && `Product/Domain: ${product}`,
@@ -768,7 +964,22 @@ Return this exact structure:
 
 Extract 3-5 themes, 2-4 pain points, 3-5 quotes, 3-4 opportunities, and 3 next questions. Be specific and grounded in what was actually said.`;
 
-    const userPrompt = `${contextParts ? 'Context:\n' + contextParts + '\n\n' : ''}Interview Transcript:\n${transcript}`;
+    // Build message content — PDF uses document block, text uses plain string
+    let userContent;
+    if (isPdf) {
+      userContent = [
+        {
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 }
+        },
+        {
+          type: 'text',
+          text: `${contextParts ? 'Context:\n' + contextParts + '\n\n' : ''}Analyze the interview transcript in the document above and return the JSON structure.`
+        }
+      ];
+    } else {
+      userContent = `${contextParts ? 'Context:\n' + contextParts + '\n\n' : ''}Interview Transcript:\n${transcript}`;
+    }
 
     try {
       streamText.textContent = 'Extracting themes and insights...';
@@ -785,7 +996,7 @@ Extract 3-5 themes, 2-4 pain points, 3-5 quotes, 3-4 opportunities, and 3 next q
           model: 'claude-sonnet-4-20250514',
           max_tokens: 2000,
           system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }]
+          messages: [{ role: 'user', content: userContent }]
         })
       });
 
